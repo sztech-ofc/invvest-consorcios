@@ -515,3 +515,182 @@ window.addEventListener('scroll', () => {
 }, {
     passive: true
 });
+
+
+/* ==================================================
+   VÍDEOS DO INSTAGRAM — DUAS PUBLICAÇÕES
+
+   Os posts são incorporados com o player oficial do
+   Instagram. É possível clicar para assistir SEM SAIR
+   do site quando o Instagram permitir a incorporação.
+   O Instagram pode exigir login, bloquear a reprodução
+   ou não permitir autoplay. O link original permanece
+   disponível logo abaixo de cada publicação.
+
+   Futuramente, você também pode adicionar MP4 de vídeos
+   próprios em assets/reels/ para reprodução nativa.
+================================================== */
+const instagramReels = [
+    {
+        titulo: 'Vídeo 01 — INVVEST',
+        video: '',
+        url: 'https://www.instagram.com/p/DchRBZkBw6H/',
+        poster: ''
+    },
+    {
+        titulo: 'Vídeo 02 — INVVEST',
+        video: '',
+        url: 'https://www.instagram.com/p/DerWActFW4v/?img_index=1',
+        poster: ''
+    }
+];
+
+function urlReelValida(valor) {
+    try {
+        const url = new URL(String(valor || ''));
+        const hostValido = url.hostname === 'instagram.com' || url.hostname === 'www.instagram.com';
+        if (url.protocol !== 'https:' || !hostValido) return '';
+        const correspondencia = url.pathname.match(/^\/(reel|p)\/([a-zA-Z0-9_-]+)\/?$/);
+        if (!correspondencia) return '';
+        const indice = url.searchParams.get('img_index');
+        const query = indice && /^[1-9]\d?$/.test(indice) ? `?img_index=${indice}` : '';
+        return `https://www.instagram.com/${correspondencia[1]}/${correspondencia[2]}/${query}`;
+    } catch {
+        return '';
+    }
+}
+
+function criarElemento(tag, classes, texto) {
+    const elemento = document.createElement(tag);
+    if (classes) elemento.className = classes;
+    if (texto != null) elemento.textContent = texto;
+    return elemento;
+}
+
+function montarReels() {
+    const trilho = document.querySelector('#reelsRail');
+    const btnAnterior = document.querySelector('#reelsPrev');
+    const btnProximo = document.querySelector('#reelsNext');
+    if (!trilho) return;
+
+    instagramReels.forEach((reel, indice) => {
+        const link = urlReelValida(reel.url);
+        const arquivo = String(reel.video || '').trim();
+        const poster = String(reel.poster || '').trim();
+        const card = criarElemento('article', 'reel-card');
+        const media = criarElemento('div', 'reel-media');
+        const tag = criarElemento('span', 'reel-live-tag', 'INVVEST REELS');
+
+        if (link && archivoMp4Valido(arquivo)) {
+            const ancora = criarElemento('a', 'reel-video-link');
+            ancora.href = link;
+            ancora.target = '_blank';
+            ancora.rel = 'noopener noreferrer';
+            ancora.setAttribute('aria-label', `Assistir ${reel.titulo} no Instagram`);
+            const video = criarElemento('video');
+            video.muted = true;
+            video.defaultMuted = true;
+            video.autoplay = true;
+            video.loop = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            video.setAttribute('muted','');
+            video.setAttribute('playsinline','');
+            video.setAttribute('disablepictureinpicture','');
+            video.src = arquivo;
+            if (poster) video.poster = poster;
+            const overlay = criarElemento('div', 'reel-on-video');
+            overlay.append(criarElemento('span', '', 'ASSISTA NO INSTAGRAM'), criarElemento('strong', '', '↗'));
+            ancora.append(video, overlay);
+            media.append(ancora);
+        } else if (link) {
+            // Um iframe é reproduzível conforme as permissões do Instagram,
+            // mas o autoplay não pode ser imposto por este site.
+            const frame = criarElemento('iframe', 'reel-iframe');
+            const publicacao = new URL(link);
+            const incorporacao = new URL(`https://www.instagram.com${publicacao.pathname}embed/`);
+            // Mantém o índice escolhido nas publicações em carrossel, se suportado pelo Instagram.
+            const indice = publicacao.searchParams.get('img_index');
+            if (indice) incorporacao.searchParams.set('img_index', indice);
+            frame.src = incorporacao.toString();
+            frame.title = `Publicação do Instagram: ${reel.titulo}`;
+            frame.loading = 'lazy';
+            frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+            frame.allowFullscreen = true;
+            frame.referrerPolicy = 'strict-origin-when-cross-origin';
+            media.append(frame);
+        } else {
+            const preview = criarElemento('div', 'reel-preview');
+            if (poster) {
+                const img = criarElemento('img');
+                img.src = poster;
+                img.alt = '';
+                img.loading = 'lazy';
+                preview.append(img);
+            }
+            const informacoes = criarElemento('div', 'reel-preview-info');
+            informacoes.append(criarElemento('span', '', 'ESPAÇO PARA O VÍDEO'), criarElemento('strong', '', '▶'));
+            preview.append(informacoes);
+            media.append(preview);
+        }
+        if (link && archivoMp4Valido(arquivo)) media.append(tag);
+        const descricao = criarElemento('div', 'reel-copy');
+        descricao.append(criarElemento('small', '', `VÍDEO ${String(indice + 1).padStart(2,'0')}`));
+        descricao.append(criarElemento('h3', '', reel.titulo));
+        if (link) {
+            const visita = criarElemento('a', 'reel-open', 'Ver no Instagram ↗');
+            visita.href = link;
+            visita.target = '_blank';
+            visita.rel = 'noopener noreferrer';
+            descricao.append(visita);
+        } else {
+            descricao.append(criarElemento('span', 'reel-coming', 'Aguardando vídeo e link'));
+        }
+        card.append(media, descricao);
+        trilho.append(card);
+    });
+
+    function atualizarSetas() {
+        const fim = trilho.scrollWidth - trilho.clientWidth;
+        if (btnAnterior) btnAnterior.disabled = trilho.scrollLeft <= 4;
+        if (btnProximo) btnProximo.disabled = trilho.scrollLeft >= fim - 4;
+    }
+    function mover(direcao) {
+        const card = trilho.querySelector('.reel-card');
+        if (!card) return;
+        const espacamento = parseFloat(getComputedStyle(trilho).gap) || 18;
+        trilho.scrollBy({ left: direcao * (card.getBoundingClientRect().width + espacamento), behavior: 'smooth' });
+    }
+    btnAnterior?.addEventListener('click', () => mover(-1));
+    btnProximo?.addEventListener('click', () => mover(1));
+    trilho.addEventListener('scroll', atualizarSetas, { passive: true });
+    window.addEventListener('resize', atualizarSetas);
+    requestAnimationFrame(atualizarSetas);
+
+    // Evita consumir dados/reproduzir vídeos que estão fora da tela.
+    const visibilidade = new IntersectionObserver((entradas) => {
+        entradas.forEach((entrada) => {
+            const video = entrada.target;
+            if (entrada.isIntersecting && !document.hidden) {
+                const tentativa = video.play();
+                if (tentativa?.catch) tentativa.catch(() => {});
+            } else video.pause();
+        });
+    }, { threshold: .5 });
+    trilho.querySelectorAll('video').forEach((video) => visibilidade.observe(video));
+    document.addEventListener('visibilitychange', () => {
+        trilho.querySelectorAll('video').forEach((video) => {
+            if (document.hidden) video.pause();
+            else if (video.getBoundingClientRect().top < innerHeight && video.getBoundingClientRect().bottom > 0) {
+                const tentativa = video.play();
+                if (tentativa?.catch) tentativa.catch(() => {});
+            }
+        });
+    });
+}
+
+function archivoMp4Valido(caminho) {
+    return /^(?:assets\/reels\/[^\s?#]+\.mp4|https:\/\/[^\s]+\.mp4(?:\?[^\s]*)?)$/i.test(caminho);
+}
+
+montarReels();
