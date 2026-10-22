@@ -573,7 +573,7 @@ function montarReels() {
     const btnProximo = document.querySelector('#reelsNext');
     if (!trilho) return;
 
-    instagramReels.forEach((reel, indice) => {
+    instagramReels.forEach((reel) => {
         const link = urlReelValida(reel.url);
         const arquivo = String(reel.video || '').trim();
         const poster = String(reel.poster || '').trim();
@@ -635,8 +635,6 @@ function montarReels() {
         }
         if (link && archivoMp4Valido(arquivo)) media.append(tag);
         const descricao = criarElemento('div', 'reel-copy');
-        descricao.append(criarElemento('small', '', `VÍDEO ${String(indice + 1).padStart(2,'0')}`));
-        descricao.append(criarElemento('h3', '', reel.titulo));
         if (link) {
             const visita = criarElemento('a', 'reel-open', 'Ver no Instagram ↗');
             visita.href = link;
