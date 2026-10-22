@@ -614,6 +614,8 @@ function montarReels() {
             if (indice) incorporacao.searchParams.set('img_index', indice);
             frame.src = incorporacao.toString();
             frame.title = `Publicação do Instagram: ${reel.titulo}`;
+            frame.scrolling = 'no';
+            frame.setAttribute('scrolling', 'no');
             frame.loading = 'lazy';
             frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
             frame.allowFullscreen = true;

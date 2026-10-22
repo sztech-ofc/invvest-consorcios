@@ -1881,8 +1881,14 @@ footer {
 }
 #videos .reel-card { width: 100%; scroll-snap-align: none; }
 #videos .reel-media { aspect-ratio: 9 / 15; min-height: 485px; }
-#videos .reel-media:has(.reel-iframe) { background: #fff; }
+#videos .reel-media:has(.reel-iframe) { background: #fff; overflow: hidden; }
 #videos .reel-media:has(.reel-iframe)::after { display: none; }
+#videos .reel-iframe {
+    display: block;
+    width: calc(100% + 18px);
+    height: calc(100% + 56px);
+    max-width: none;
+}
 #videos .reel-copy { padding: 18px 20px 22px; }
 #videos .reel-open { padding-block: 4px; }
 @media (max-width: 760px) {
